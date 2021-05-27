@@ -46,6 +46,7 @@ function varargout=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
 % Last modified by efwelch@princeton.edu, 06/25/2010
 % Correction supplied by Xiaojun Chen (Yale), 04/14/2014
 % Last modified by fjsimons-at-alum.mit.edu, 09/17/2019
+% Last modified by sirawich@princeton.edu, 09/05/2020
 
 % Check to see if it's a demo case
 if isempty(strfind(fname,'demo'))
@@ -82,7 +83,7 @@ if isempty(strfind(fname,'demo'))
   for i=1:Nquakes
     % First line %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     line=fgetl(fid);
-    mb=str2num(line(49:51));
+    mb=str2num(line(53:55));
     time=datenum(line(6:26));
     
     % Skip second line %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
