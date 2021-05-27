@@ -31,14 +31,14 @@ function varargout=stalta(sig,DT,BE,STA,LTA,TR,DTR,PEM,PET,PNL,ATL)
 % tim2    Time axis for 'stav'
 % tim3    Time axis for 'ltav'
 % trigs   Vector with triggering points, in samples
-% drtigs  Vector with detriggering points, in samples
+% dtrigs  Vector with detriggering points, in samples
 %
 % EXAMPLE:
 %
 % stalta('demo')
 % stalta('demo',3)
 %
-% Last modified by fjsimons-at-alum.mit.edu, 02/15/2017
+% Last modified by fjsimons-at-alum.mit.edu, 04/03/2021
 
 if ~isstr(sig)
 
@@ -149,6 +149,7 @@ else
 
   % The directory where the sac data are kept 
   ddir= '/u/fjsimons/MERMAID/SIGNALS/';
+  % I now keep them in $IFILES/MATLABDEMOS/staltademo.zip
 
   % The names of the seismograms
   fname= {'CE_19990951108.sac'...

@@ -10,8 +10,7 @@ function varargout=guyotweather(jday,year,nset)
 %
 % jday    Julian day (e.g., 212 is July 31 in 2019) [default: yesterday]
 % year    Gregorian year (e.g., 19 or 2019 assuming post 2000)
-% nset    One or two indices of the weather plot variable 
-%         [default: 3:4, for AirTemp_C and AirPress_bar]
+% nset    One, two, three or four indices of the weather plot variable [default: 5 3 4 6]
 %         1 'MeanWindDirection_deg'
 %         2 'MeanWindSpeed_mps'
 %         3 'AirTemp_C'
@@ -23,7 +22,7 @@ function varargout=guyotweather(jday,year,nset)
 % OUTPUT:
 %
 % data     A structure with the data fieldnames and values
-% hdrv     A cell arraywith header variables 
+% hdrv     A cell array with header variables 
 %
 % SEE ALSO:
 %
@@ -33,23 +32,25 @@ function varargout=guyotweather(jday,year,nset)
 %
 % 9.0.0.314360 (R2016a) - 9.1.0.441655 (R2016b)
 %
-% Last modified by fjsimons-at-alum.mit.edu, 12/14/2019
+% COMPILE WITH:
+%
+% mcc guyotweather
+%
+% Last modified by fjsimons-at-alum.mit.edu, 01/21/2021
 
 % Default values are "yesterday" ...
 defval('jday',dat2jul-1)
 % ... and using this year's two-digit code
-defval('year',str2num(datestr(today,11)))
+%defval('year',str2num(datestr(today,11)))
+defval('year',str2num(datestr(now,11)))
 % ... and plotting the temperature time series
-defval('nset',3:4)
-
-% Guyot Hall STLO and STLA
-lola=guyotphysics(0);
+defval('nset',[5 3 4 6])
 
 % Two digits if the input wasn't
 if year>2000; year=year-2000; end
 
 % Specify the web address
-urlbase='http://geoweb.princeton.edu/people/simons/PTON/';
+urlbase='http://geoweb.princeton.edu/people/simons/PTON';
 % Custom-make the last bit
 urltail=sprintf('pton%3.3i0.%2.2i__ASC_ASCIIIn.mrk',jday,year);
 
@@ -102,89 +103,173 @@ varargout=varns(1:nargout);
 if nargout==0
   clf
   % Note that subplot(111) is not identical in behavior to subplot(1,1,1)
-  ah=subplot(1,1,1);
+  switch length(nset)
+    case {1,2}
+     ah=subplot(1,1,1);
+    case {3,4}
+     ah(1)=subplot(2,1,1);
+     ah(2)=subplot(2,1,2);
+  end
+  
   % Remove the weird first data point in the preceding UTC day, see DAT2JUL
   jdai=ceil(datenum(data.Timestamp-['01-Jan-',datestr(data.Timestamp(end),'YYYY')]))==jday;
   % Make title string in the original time zone
   titsdate=datestr(data.Timestamp(min(find(jdai))),1);
 
+  % Guyot Hall STLO and STLA
+  lola=guyotphysics(0);
+  
   % So the data.Timestamp.Timezone evaluated to UTC and we're going to
   % change that back to New York for display only
   data.Timestamp.TimeZone='America/New_York';
 
   % Independent variable
   taxis=data.Timestamp(jdai);
+  % Dependent variables
+  defval('var1',[])
+  defval('var2',[])
+  defval('var3',[])
+  defval('var4',[])
 
-  % Dependent variable bits
-  varn1=hdrv{nset(1)+1};
-  varu1=nounder(varn1);
-  var1=data.(varn1)(jdai);
-  col1='k';
-  str1='%s %s (UTC day %i)';
+  % We'll be allowing up to four independent variables
+  col={'r','b','m','k'};
 
-  if length(nset)==1
-    plot(taxis,var1,col1)
-    t=title(sprintf(str1,varu1,titsdate,jday));
-    ylabel(varu1);
-  elseif length(nset)==2
-    % Dependent variable bits
-    varn2=hdrv{nset(2)+1};
-    var2=data.(varn2)(jdai);
-    varu2=nounder(varn2);
-    col2='b';
-    str2='%s / %s %s (UTC day %i)';
-
-    plot(taxis,var1,col1)
-    ylabel(varu1);
-    yyaxis right
-    plot(taxis,var2,col2)
-    ylabel(varu2);
-    yyaxis left
-    t=title(sprintf(str2,varu1,varu2,titsdate,jday));
-  else
-     error('Supply at most TWO index variables for the weather plot!')
-  end
   % Add two minutes to come to a round number on the axis
   xels=[data.Timestamp(min(find(jdai))) data.Timestamp(max(find(jdai)))+minutes(2)];
   xells=xels(1):hours(4):xels(2);
+  xlabs=sprintf('Guyot Hall (%10.5f%s,%10.5f%s) %s time [HH:mm]\n%s',...
+		lola(1),176,lola(2),176,nounder(data.Timestamp.TimeZone'),...
+						sprintf('%s/%s',urlbase,urltail));
 
-  % The order matters!
-  yels=ylim;
-  % Day break
-  hold on; plot(xells([2 2]),ylim,'-','Color',grey); hold off	
-  ylim(yels)
-  % Average value of what's being plotted which it learns from the context
-  hold on ; plot(xels,[1 1]*nanmean(var1),'--','Color',col1); hold off
-  if length(nset)==2
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  axes(ah(1))
+
+  % Dependent variable bits. There is always at least one, this one 
+  [var1,varu1]=getvars(nset(1),jdai,data,hdrv);
+  plot(taxis,var1,col{1})
+  str1='%s %s (UTC day %i)';
+  t(1)=title(sprintf(str1,varu1,titsdate,jday));
+  ylabel(varu1);
+  nsets1=1; ofs=20;
+  
+  if length(nset)>1 
+    nsets1=[1 2]; ofs=15;
+    [var2,varu2]=getvars(nset(2),jdai,data,hdrv);
+    str2='%s / %s %s (UTC day %i)';
+
+    delete(t(1))
     yyaxis right
-    hold on ; plot(xels,[1 1]*nanmean(var2),'--','Color',col2) ; hold off
-  end	
+    plot(taxis,var2,col{2})
+    ylabel(varu2);
+    yyaxis left
+    t(1)=title(sprintf(str2,varu1,varu2,titsdate,jday));
 
-  try
-    % Latest versions
-    xlim(xels)
-    set(ah,'xtick',xells)
-  catch
-    % Earlier versions
-    xlim(datenum(xels))
-    set(ah,'xtick',datenum(xells))
+    % Make the ylabels the same color as what's being plotted
+    ah(1).YAxis(1).Color=col{1};
+    ah(1).YAxis(2).Color=col{2};
   end
-  datetick('x','HH:MM','keepticks','keeplimits')
-  xlabel(sprintf('Guyot Hall (%10.5f%s,%10.5f%s) %s time',...
-		 lola(1),176,lola(2),176,nounder(data.Timestamp.TimeZone')))
-  longticks(ah,2)
-  set(ah,'FontSize',12)
-  % Cosmetics
-  shrink(ah,1.1,1.1)
-  movev(t,range(yels)/20)
+  if  length(nset)>2
+    nsets2=3;
+    [var3,varu3]=getvars(nset(3),jdai,data,hdrv);
 
+    axes(ah(2))
+    plot(taxis,var3,col{3})
+    str1='%s %s (UTC day %i)';
+    t(2)=title(sprintf(str1,varu3,titsdate,jday));
+    ylabel(varu3);
+ 
+    if length(nset)==4
+      nsets2=[3 4];
+      [var4,varu4]=getvars(nset(4),jdai,data,hdrv);
+      str2='%s / %s %s (UTC day %i)';
+    
+      delete(t(2))
+      yyaxis right
+      plot(taxis,var4,col{4})
+      ylabel(varu4);
+      yyaxis left
+      t(2)=title(sprintf(str2,varu3,varu4,titsdate,jday));
+    
+      ah(2).YAxis(1).Color=col{3};
+      ah(2).YAxis(2).Color=col{4};
+    end
+  end
+
+  % Markup
+  [xl(1),yels{1}]=priti(ah(1),xels,xells,xlabs,var1,var2,col,nsets1);
+    
+  if length(ah)==1
+    % Cosmetics
+    shrink(ah,1.1,1.1)
+  end
+
+  movev(t(1),range(yels{1})/ofs)
+  % The below is finicky, so check by eye!
+  % t(1).Positions.Units='normalized'
+  moveh(t(1),0.05)
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  if length(ah)>1
+    delete(xl(1))
+    
+    % Markup
+    [xl(1),yels{2}]=priti(ah(2),xels,xells,xlabs,var3,var4,col,nsets2);
+    
+    % Cosmetics
+    movev(t(2),range(yels{2})/ofs)
+    moveh(t(2),0.05)
+  end
+  
+  longticks(ah,2)
+  set(ah,'FontSize',11)
+  set(xl,'FontSize',11)
+  
   if length(nset)==1
     figdisp([],sprintf('%3.3i_%i_%i',jday,year,nset),'-bestfit',1,'pdf')
   elseif length(nset)==2
     figdisp([],sprintf('%3.3i_%i_%i_%i',jday,year,nset),'-bestfit',1,'pdf')
+  elseif length(nset)==3
+    figdisp([],sprintf('%3.3i_%i_%i_%i_%i',jday,year,nset),'-bestfit',1,'pdf')
+  elseif length(nset)==4
+    figdisp([],sprintf('%3.3i_%i_%i_%i_%i_%i',jday,year,nset),'-bestfit',1,'pdf')
   end
 end
 
-% DON'T FORGET TO RSYNC LEMAITRE FROM CRESSIDA SUCH THAT CRESSIDA CAN BE
-% DECOMMISSIONED
+% Cleanup %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [vari,varu]=getvars(indi,jdai,data,hdrv)
+% The actual variable, all of it
+varn=hdrv{indi+1};
+% The actual variable, only what we need
+vari=data.(varn)(jdai);
+varu=nounder(varn);
 
+% Cleanup %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [xl,yels]=priti(ah,xels,xells,xlabs,var1,var2,col,coli)
+
+axes(ah)
+% The order matters!
+yels=ylim;
+% Day break
+hold on; plot(xells([2 2]),ylim,'-','Color',grey); hold off	
+ylim(yels)
+% Average value of what's being plotted which it learns from the context
+hold on ; plot(xels,[1 1]*nanmean(var1),'--','Color',col{coli(1)}); hold off
+if length(coli)==2
+  yyaxis right
+  hold on ; plot(xels,[1 1]*nanmean(var2),'--','Color',col{coli(2)}) ; hold off
+end	
+
+try
+  % Latest versions
+  xlim(xels)
+  set(ah(1),'xtick',xells)
+catch
+  % Earlier versions
+  xlim(datenum(xels))
+  set(ah(1),'xtick',datenum(xells))
+end
+datetick('x','HH:MM','keepticks','keeplimits')
+xl=xlabel(xlabs);
+% Finicky!
+movev(xl,-range(yels)/20)
+moveh(xl,0.05)
