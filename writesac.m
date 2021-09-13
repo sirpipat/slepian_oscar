@@ -14,7 +14,7 @@ function fid=writesac(SeisData,HdrData,filename)
 % See also: READSAC, MAKEHDR
 % 
 % Last modified by fjsimons-at-alum.mit.edu, 05/25/2020
-% Last modified by sirawich-at-princeton.edu, 08/31/2021
+% Last modified by sirawich-at-princeton.edu, 09/13/2021
 
 % Default filename
 defval('filename',[inputname(1),'.sac']);
@@ -52,6 +52,10 @@ HdrF(43)=HdrData.USER2;
 HdrF(44)=HdrData.USER3;
 HdrF(45)=HdrData.USER4;
 HdrF(46)=HdrData.USER5;
+HdrF(47)=HdrData.USER6;
+HdrF(48)=HdrData.USER7;
+HdrF(49)=HdrData.USER8;
+HdrF(50)=HdrData.USER9;
 HdrF(39)=HdrData.EVDP;
 HdrF(38)=HdrData.EVEL;
 HdrF(36)=HdrData.EVLA;
