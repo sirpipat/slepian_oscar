@@ -29,9 +29,8 @@ function varargout=readsac(filename,plotornot,osd,resol)
 %
 % WRITESAC, PLOTSAC
 % 
-% Last modified by fjsimons-at-alum.mit.edu, 07/29/2020
-% Last modified by sirawich-at-princeton.edu, 09/13/2021
-
+% Last modified by fjsimons-at-alum.mit.edu, 07/16/2021
+% Last modified by sirawich-at-princeton.edu, 09/27/2021
 
 defval('plotornot',0)
 defval('osd',osdep)
@@ -150,6 +149,14 @@ IVARS={'UNKNOWN',...
 if resol==1
   HdrData.IFTYPE=IVARS{max(HdrData.IFTYPE+1,1)};
   HdrData.IDEP=IVARS{max(HdrData.IDEP+1,1)};
+end
+
+% One has observed E variables to be -12345 yet showing up as legitimate
+% SAC header
+if HdrData.E==-12345
+  %  HdrData.E=HdrData.B+(HdrData.NPTS-1)*vpa(HdrData.DELTA,6);
+  HdrData.E=HdrData.B+(HdrData.NPTS-1)*round(HdrData.DELTA*1e6)/1e6;
+  disp('Calculated E time')
 end
 
 % For the time sequence
