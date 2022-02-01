@@ -1,5 +1,5 @@
 function varargout=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
-% [QUAKES,Mw]=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
+% [QUAKES,Mw,CMT]=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
 %
 % Reads in CMT earthquake catalog in default format of www.globalcmt.org, 
 % http://www.ldeo.columbia.edu/~gcmt/projects/CMT/catalog/jan76_dec13.ndk
@@ -19,6 +19,22 @@ function varargout=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
 %
 % QUAKES         [time depth lat lon Mtensor]
 % Mw             All the scalar seismic moments
+% CMT            A structure for the requested event (if not all)
+%                containing the following fields:
+%      DateTime       A string containing the time of the even
+%                     in the format 'yyyy/mm/dd hh/mm/ss.s'
+%      EventName      see INPUT:cmtcode
+%      MomentType     The type of moment-rate function. 
+%                     BOXHD <-> boxcar; TRIHD <-> triangular
+%      HalfDuration   Half the duration of the moment rate function
+%      CentroidTime   Offset in seconds w.r.t. DateTime
+%      Lat            Centroid Latitude [degrees]
+%      Lon            Centroid Longitude [degrees]
+%      Dep            Centroid Depth [km]
+%      Exp            Moment tensor components are to be multiplied by
+%                     to get M in units of dyne/cm 
+%      M              M=[Mrr Mtt Mpp Mrt Mrp Mtp] in [dyne cm]
+%      Mw             Moment magnitude (Hanks & Kanamori 1979)
 %
 % EXAMPLES:
 %
@@ -46,7 +62,7 @@ function varargout=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
 % Last modified by efwelch@princeton.edu, 06/25/2010
 % Correction supplied by Xiaojun Chen (Yale), 04/14/2014
 % Last modified by fjsimons-at-alum.mit.edu, 09/17/2019
-% Last modified by sirawich@princeton.edu, 09/05/2020
+% Last modified by sirawich@princeton.edu, 01/31/2022
 
 % Check to see if it's a demo case
 if isempty(strfind(fname,'demo'))
@@ -87,7 +103,8 @@ if isempty(strfind(fname,'demo'))
     time=datenum(line(6:26));
     
     % Skip second line %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    fgetl(fid);
+    line = fgetl(fid);
+    cmtcode = replace(line(1:16), ' ', '');
     
     % Third line %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     line = fgetl(fid);
@@ -123,6 +140,7 @@ if isempty(strfind(fname,'demo'))
       
       % Store in the output array
       QUAKES(i-nogood,:)=[time depth lat lon Mtensor];
+      CMT(i-nogood) = cmtsol(cmtcode, fname);
       fgetl(fid);
       
       % If earthquakes don't satisfy condition read 4th and 5th line to prepare
@@ -146,6 +164,7 @@ if isempty(strfind(fname,'demo'))
   % Resize array to correct output
   QUAKES=QUAKES(1:Nquakes-nogood,:);
   Mw=Mw(1:Nquakes-nogood,:);
+  CMT = CMT(1:Nquakes-nogood);
 
 elseif strcmp(fname,'demo1')
   % Pick out Chao & Gross earthquakes including those at shallow depth
@@ -214,5 +233,5 @@ elseif strcmp(fname,'demo4')
 end
 
 % Provide output if requested
-varns={QUAKES,Mw};
+varns={QUAKES,Mw,CMT};
 varargout=varns(1:nargout);
