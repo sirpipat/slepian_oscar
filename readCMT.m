@@ -1,5 +1,5 @@
-function varargout=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
-% [QUAKES,Mw,CMT]=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
+function varargout=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax,pos)
+% [QUAKES,Mw,CMT]=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax,pos)
 %
 % Reads in CMT earthquake catalog in default format of www.globalcmt.org, 
 % http://www.ldeo.columbia.edu/~gcmt/projects/CMT/catalog/jan76_dec13.ndk
@@ -14,6 +14,8 @@ function varargout=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
 %                tbeg should be set to 0 and tend should be set to Inf
 % mblo, mbhi     Body-wave moment magnitude interval of interest
 % depmin,depmax  Depth range of interest [km]
+% pos            position of the earthquake, either 'hypocenter' or 
+%                'centroid' [default: 'centroid']
 %
 % OUTPUT:     
 %
@@ -62,7 +64,7 @@ function varargout=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
 % Last modified by efwelch@princeton.edu, 06/25/2010
 % Correction supplied by Xiaojun Chen (Yale), 04/14/2014
 % Last modified by fjsimons-at-alum.mit.edu, 09/17/2019
-% Last modified by sirawich@princeton.edu, 01/31/2022
+% Last modified by sirawich@princeton.edu, 02/04/2022
 
 % Check to see if it's a demo case
 if isempty(strfind(fname,'demo'))
@@ -77,6 +79,7 @@ if isempty(strfind(fname,'demo'))
   defval('mbhi',Inf)
   defval('depmin',0)
   defval('depmax',Inf)
+  defval('pos','centroid')
   
   % Build filename
   fname=fullfile(dirn,sprintf(fname));
@@ -101,6 +104,9 @@ if isempty(strfind(fname,'demo'))
     line=fgetl(fid);
     mb=str2num(line(53:55));
     time=datenum(line(6:26));
+    if strcmpi(pos, 'hypocenter')
+        depth = line(43:47);
+    end
     
     % Skip second line %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     line = fgetl(fid);
@@ -108,7 +114,9 @@ if isempty(strfind(fname,'demo'))
     
     % Third line %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     line = fgetl(fid);
-    depth = str2num(line(49:54));
+    if strcmpi(pos, 'centroid')
+        depth = str2num(line(49:54));
+    end
     
     % Check if it's too late
     if (time > tend )
@@ -174,7 +182,7 @@ elseif strcmp(fname,'demo1')
     load(fname)
   else
     [QUAKES,Mw]=readCMT([],[],datenum('1977/01/01 00:00:01'),...
-		         datenum('1985/03/31 00:00:01'),[],[],[],[]);
+		         datenum('1985/03/31 00:00:01'),[],[],[],[],[]);
     save(fname,'QUAKES','Mw')
   end
 elseif strcmp(fname,'demo2')
@@ -185,10 +193,10 @@ elseif strcmp(fname,'demo2')
     load(fname)
   else
     [include,Mwin]=readCMT([],[],datenum('1977/01/01 00:00:01'),...
-		          datenum('1985/03/31 00:00:01'),5.5,[],[],[]);
+		          datenum('1985/03/31 00:00:01'),5.5,[],[],[],[]);
 
     [exclude,Mwex]=readCMT([],[],datenum('1977/01/01 00:00:01'),...
-		          datenum('1981/01/01 00:00:01'),5.5,6.5,0,100);
+		          datenum('1981/01/01 00:00:01'),5.5,6.5,0,100,[]);
 
     xcount=1;
     for j=1:size(include,1);
@@ -212,7 +220,7 @@ elseif strcmp(fname,'demo3')
     load(fname)
   else
     [QUAKES,Mw]=readCMT('jan76_dec13.ndk',[],datenum('1977/01/01 00:00:01'),...
-		   [],[],[],[],[]);
+		   [],[],[],[],[],[]);
     save(fname,'QUAKES','Mw')
   end
 elseif strcmp(fname,'demo4')
@@ -225,7 +233,7 @@ elseif strcmp(fname,'demo4')
   else
     [pre,Mwpre]=readCMT('demo2');
     [post,Mwpost]=readCMT('jan76_dec13.ndk',[],datenum('1985/03/31 00:00:01'),...
-		 [],[],[],[],[]);
+		 [],[],[],[],[],[]);
     QUAKES=vertcat(pre,post);
     Mw=vertcat(Mwpre,Mwpost);
     save(fname,'QUAKES','Mw')
