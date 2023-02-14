@@ -105,7 +105,7 @@ if isempty(strfind(fname,'demo'))
     mb=str2num(line(53:55));
     time=datenum(line(6:26));
     if strcmpi(pos, 'hypocenter')
-        depth = line(43:47);
+        depth = str2double(line(43:47));
     end
     
     % Skip second line %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
