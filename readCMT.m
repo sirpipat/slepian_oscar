@@ -152,7 +152,7 @@ if isempty(strfind(fname,'demo'))
       fgetl(fid);
 
       % Add in the CMT code as a new output
-      cmtcode(i-nogood,:)=cmt;
+      %cmtcode(i-nogood,:)=cmt;
       
       % If earthquakes don't satisfy condition read 4th and 5th line to prepare
       % the pointer to read the next quake and count it as not used
