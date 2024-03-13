@@ -64,7 +64,7 @@ function varargout=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax,pos)
 % Last modified by efwelch@princeton.edu, 06/25/2010
 % Correction supplied by Xiaojun Chen (Yale), 04/14/2014
 % Last modified by fjsimons-at-alum.mit.edu, 09/17/2019
-% Last modified by sirawich@princeton.edu, 02/04/2022
+% Last modified by sirawich@princeton.edu, 03/04/2024
 
 % Check to see if it's a demo case
 if isempty(strfind(fname,'demo'))
@@ -172,6 +172,18 @@ if isempty(strfind(fname,'demo'))
   % Sew it shut
   fclose(fid);
 
+  % return empty if no earthquake fits the criteria
+  if ~exist('CMT', 'var')
+    CMT = [];
+    QUAKES = [];
+    Mw = [];
+      
+    % Provide output if requested
+    varns={QUAKES,Mw,CMT};
+    varargout=varns(1:nargout);
+    return
+  end
+  
   % Resize array to correct output
   QUAKES=QUAKES(1:Nquakes-nogood,:);
   Mw=Mw(1:Nquakes-nogood,:);
