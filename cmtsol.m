@@ -126,7 +126,6 @@ varargout=vars(1:nargout);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function S=makestruct(C,in)
-kb
 % See also: as in DEFSTRUCT or GUYOTWEATHER
 S=struct('DateTime',    C{1}(in,:),...
          'Magnitude',   C{2}(in),...

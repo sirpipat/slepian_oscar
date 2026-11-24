@@ -6,8 +6,10 @@ function HdrData=makehdr
 % SEE ALSO: READSAC
 %
 % Last modified by fjsimons-at-alum.mit.edu, 02/22/2020
+% Last modified by sirawich-at-princeton.edu, 08/31/2021
 
 badval=-12345;
+badalpha='-12345..';
 
 HdrData=[];
 
@@ -60,3 +62,21 @@ HdrData.STLA=badval;
 HdrData.STLO=badval;
 HdrData.T0=badval;
 HdrData.T1=badval;
+HdrData.T2=badval;
+HdrData.T3=badval;
+HdrData.T4=badval;
+HdrData.T5=badval;
+HdrData.T6=badval;
+HdrData.T7=badval;
+HdrData.T8=badval;
+HdrData.T9=badval;
+HdrData.KT0=badalpha;
+HdrData.KT1=badalpha;
+HdrData.KT2=badalpha;
+HdrData.KT3=badalpha;
+HdrData.KT4=badalpha;
+HdrData.KT5=badalpha;
+HdrData.KT6=badalpha;
+HdrData.KT7=badalpha;
+HdrData.KT8=badalpha;
+HdrData.KT9=badalpha;

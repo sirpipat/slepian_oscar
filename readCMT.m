@@ -1,5 +1,5 @@
-function varargout=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
-% [QUAKES,Mw,cmtcode]=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
+function varargout=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax,pos)
+% [QUAKES,Mw,CMT]=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax,pos)
 %
 % Reads in CMT earthquake catalog in default format of www.globalcmt.org, 
 % http://www.ldeo.columbia.edu/~gcmt/projects/CMT/catalog/jan76_dec20.ndk
@@ -14,12 +14,29 @@ function varargout=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
 %                tbeg should be set to 0 and tend should be set to Inf
 % mblo, mbhi     Body-wave moment magnitude interval of interest
 % depmin,depmax  Depth range of interest [km]
+% pos            position of the earthquake, either 'hypocenter' or 
+%                'centroid' [default: 'centroid']
 %
 % OUTPUT:     
 %
 % QUAKES         [time depth lat lon Mtensor]
 % Mw             All the scalar seismic moments
-% cmtcode        All the CMT codes    
+% CMT            A structure for the requested event (if not all)
+%                containing the following fields:
+%      DateTime       A string containing the time of the even
+%                     in the format 'yyyy/mm/dd hh/mm/ss.s'
+%      EventName      see INPUT:cmtcode
+%      MomentType     The type of moment-rate function. 
+%                     BOXHD <-> boxcar; TRIHD <-> triangular
+%      HalfDuration   Half the duration of the moment rate function
+%      CentroidTime   Offset in seconds w.r.t. DateTime
+%      Lat            Centroid Latitude [degrees]
+%      Lon            Centroid Longitude [degrees]
+%      Dep            Centroid Depth [km]
+%      Exp            Moment tensor components are to be multiplied by
+%                     to get M in units of dyne/cm 
+%      M              M=[Mrr Mtt Mpp Mrt Mrp Mtp] in [dyne cm]
+%      Mw             Moment magnitude (Hanks & Kanamori 1979)
 %
 % EXAMPLES:
 %
@@ -46,7 +63,8 @@ function varargout=readCMT(fname,dirn,tbeg,tend,mblo,mbhi,depmin,depmax)
 %
 % Last modified by efwelch@princeton.edu, 06/25/2010
 % Correction supplied by Xiaojun Chen (Yale), 04/14/2014
-% Last modified by fjsimons-at-alum.mit.edu, 12/06/2021
+% Last modified by fjsimons-at-alum.mit.edu, 09/17/2019
+% Last modified by sirawich@princeton.edu, 03/04/2024
 
 % Check to see if it's a demo case
 if isempty(strfind(fname,'demo'))
@@ -61,6 +79,7 @@ if isempty(strfind(fname,'demo'))
   defval('mbhi',Inf)
   defval('depmin',0)
   defval('depmax',Inf)
+  defval('pos','centroid')
   
   % Build filename
   fname=fullfile(dirn,sprintf(fname));
@@ -83,16 +102,21 @@ if isempty(strfind(fname,'demo'))
   for i=1:Nquakes
     % First line %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     line=fgetl(fid);
-    mb=str2num(line(49:51));
+    mb=str2num(line(53:55));
     time=datenum(line(6:26));
+    if strcmpi(pos, 'hypocenter')
+        depth = str2double(line(43:47));
+    end
     
-    % Second line %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    sl=fgetl(fid);
-    cmt=sl(1:14);
+    % Second line %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    line = fgetl(fid);
+    cmtcode = replace(line(1:16), ' ', '');
     
     % Third line %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     line = fgetl(fid);
-    depth = str2num(line(49:54));
+    if strcmpi(pos, 'centroid')
+        depth = str2num(line(49:54));
+    end
     
     % Check if it's too late
     if (time > tend )
@@ -124,10 +148,11 @@ if isempty(strfind(fname,'demo'))
       
       % Store in the output array
       QUAKES(i-nogood,:)=[time depth lat lon Mtensor];
+      CMT(i-nogood) = cmtsol(cmtcode, fname);
       fgetl(fid);
 
       % Add in the CMT code as a new output
-      cmtcode(i-nogood,:)=cmt;
+      %cmtcode(i-nogood,:)=cmt;
       
       % If earthquakes don't satisfy condition read 4th and 5th line to prepare
       % the pointer to read the next quake and count it as not used
@@ -147,10 +172,22 @@ if isempty(strfind(fname,'demo'))
   % Sew it shut
   fclose(fid);
 
+  % return empty if no earthquake fits the criteria
+  if ~exist('CMT', 'var')
+    CMT = [];
+    QUAKES = [];
+    Mw = [];
+      
+    % Provide output if requested
+    varns={QUAKES,Mw,CMT};
+    varargout=varns(1:nargout);
+    return
+  end
+  
   % Resize array to correct output
   QUAKES=QUAKES(1:Nquakes-nogood,:);
   Mw=Mw(1:Nquakes-nogood,:);
-  cmtcode=cmtcode(1:Nquakes-nogood,:);
+  CMT = CMT(1:Nquakes-nogood);
 
 elseif strcmp(fname,'demo1')
   % Pick out Chao & Gross earthquakes including those at shallow depth
@@ -160,7 +197,7 @@ elseif strcmp(fname,'demo1')
     load(fname)
   else
     [QUAKES,Mw]=readCMT([],[],datenum('1977/01/01 00:00:01'),...
-		         datenum('1985/03/31 00:00:01'),[],[],[],[]);
+		         datenum('1985/03/31 00:00:01'),[],[],[],[],[]);
     save(fname,'QUAKES','Mw')
   end
 elseif strcmp(fname,'demo2')
@@ -171,10 +208,10 @@ elseif strcmp(fname,'demo2')
     load(fname)
   else
     [include,Mwin]=readCMT([],[],datenum('1977/01/01 00:00:01'),...
-		          datenum('1985/03/31 00:00:01'),5.5,[],[],[]);
+		          datenum('1985/03/31 00:00:01'),5.5,[],[],[],[]);
 
     [exclude,Mwex]=readCMT([],[],datenum('1977/01/01 00:00:01'),...
-		          datenum('1981/01/01 00:00:01'),5.5,6.5,0,100);
+		          datenum('1981/01/01 00:00:01'),5.5,6.5,0,100,[]);
 
     xcount=1;
     for j=1:size(include,1);
@@ -198,7 +235,7 @@ elseif strcmp(fname,'demo3')
     load(fname)
   else
     [QUAKES,Mw]=readCMT('jan76_dec20.ndk',[],datenum('1977/01/01 00:00:01'),...
-		   [],[],[],[],[]);
+			[],[],[],[],[],[]);
     save(fname,'QUAKES','Mw')
   end
 elseif strcmp(fname,'demo4')
@@ -211,7 +248,7 @@ elseif strcmp(fname,'demo4')
   else
     [pre,Mwpre]=readCMT('demo2');
     [post,Mwpost]=readCMT('jan76_dec20.ndk',[],datenum('1985/03/31 00:00:01'),...
-		 [],[],[],[],[]);
+			  [],[],[],[],[],[]);
     QUAKES=vertcat(pre,post);
     Mw=vertcat(Mwpre,Mwpost);
     save(fname,'QUAKES','Mw')
@@ -219,5 +256,5 @@ elseif strcmp(fname,'demo4')
 end
 
 % Provide output if requested
-varns={QUAKES,Mw,cmtcode};
+varns={QUAKES,Mw,CMT};
 varargout=varns(1:nargout);

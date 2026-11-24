@@ -1,4 +1,4 @@
-function fid=writesac(SeisData,HdrData,filename)
+function fid=writesac(SeiAsData,HdrData,filename)
 % fid=WRITESAC(SeisData,HdrData,filename)
 %
 % INPUT:
@@ -15,12 +15,13 @@ function fid=writesac(SeisData,HdrData,filename)
 % 
 % Last modified by ytamama@princeton.edu, 10/20/2021
 % Last modified by fjsimons-at-alum.mit.edu, 04/07/2024
+% Last modified by spipatprathanporn@ucsd.edu, 11/23/2026
 
 % Default filename
 defval('filename',[inputname(1),'.sac']);
 
 % Default header
-defval('HdrData',makehdr)
+%defval('HdrData',makehdr)
 
 % The default undefined value
 badval=-12345;
@@ -72,8 +73,20 @@ HdrK(1,1:length(HdrData.KSTNM))=HdrData.KSTNM;
 HdrK(2,:)=HdrData.KEVNM(1:8);
 HdrK(3,1:length(HdrData.KEVNM(9:end)))=HdrData.KEVNM(9:end);
 HdrK(4,:)=HdrData.KHOLE;
-HdrK(21,1:length(HdrData.KCMPNM))=HdrData.KCMPNM;
+HdrK(7,1:length(HdrData.KT0))=HdrData.KT0;
+HdrK(8,1:length(HdrData.KT1))=HdrData.KT1;
+HdrK(9,1:length(HdrData.KT2))=HdrData.KT2;
+HdrK(10,1:length(HdrData.KT3))=HdrData.KT3;
+HdrK(11,1:length(HdrData.KT4))=HdrData.KT4;
+HdrK(12,1:length(HdrData.KT5))=HdrData.KT5;
+HdrK(13,1:length(HdrData.KT6))=HdrData.KT6;
+HdrK(14,1:length(HdrData.KT7))=HdrData.KT7;
+HdrK(15,1:length(HdrData.KT8))=HdrData.KT8;
+HdrK(16,1:length(HdrData.KT9))=HdrData.KT9;
 HdrK(18,1:length(HdrData.KUSER0))=HdrData.KUSER0;
+HdrK(19,1:length(HdrData.KUSER1))=HdrData.KUSER1;
+HdrK(20,1:length(HdrData.KUSER2))=HdrData.KUSER2;
+HdrK(21,1:length(HdrData.KCMPNM))=HdrData.KCMPNM;
 HdrK(22,1:length(HdrData.KNETWK))=HdrData.KNETWK;
 HdrK(24,1:length(HdrData.KINST))=HdrData.KINST;
 HdrL(4)=HdrData.LCALDA;
@@ -95,6 +108,12 @@ HdrF(11)=HdrData.T0;
 HdrF(12)=HdrData.T1;
 HdrF(13)=HdrData.T2;
 HdrF(14)=HdrData.T3;
+HdrF(15)=HdrData.T4;
+HdrF(16)=HdrData.T5;
+HdrF(17)=HdrData.T6;
+HdrF(18)=HdrData.T7;
+HdrF(19)=HdrData.T8;
+HdrF(20)=HdrData.T9;
 
 % Finally, proceed to writing this
 fid=fopen(filename,'w','l');
